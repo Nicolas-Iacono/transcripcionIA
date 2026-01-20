@@ -1,0 +1,8 @@
+.swal2-smaller-toast {
+  min-width: 220px !important;
+  max-width: 300px !important;
+  font-size: 1rem !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 20px !important;
+  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}

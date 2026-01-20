@@ -1,0 +1,638 @@
+import React, { useEffect, useState } from 'react';
+import GarantesApi from '../api/garanteApi';
+import { Formik, Form, Field, ErrorMessage,FieldArray  } from 'formik';
+import SchemaValidation from '../validation/SchemaValidation';
+import { Grid2, Box, TextField,FormControl, InputLabel,Select, MenuItem,Button, Typography, Switch } from '@mui/material';
+import axios from 'axios';
+import Swal from 'sweetalert2';
+import Divider from '@mui/material/Divider';
+import { CollectionsOutlined } from '@mui/icons-material';
+import ContratoApi from '../api/contratoApi';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { showAlert, showError, showInfo, showSuccess } from '../alertas/showAlert';
+const GaranteForm = ({ onSuccess }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  const [contratos, setContratos] = useState([]);
+  const [tipoGarantia, setTipoGarantia] = useState(false);
+  
+  const [localUser, setLocalUser] = useState({
+    name: '',
+    authorities: '',
+  });
+  const [isUserLoaded, setIsUserLoaded] = useState(false);
+
+
+
+  useEffect(() => {
+    if (localStorage.getItem("username")) {
+      setLocalUser({
+        name: localStorage.getItem("username"),
+        authorities: localStorage.getItem("authorities"),
+      });
+      setIsUserLoaded(true);
+    }
+  }, []);
+  // Obtener el usuario de localStorage solo una vez al montar el componente
+  useEffect(() => {
+    const username = localStorage.getItem("username");
+    const authorities = localStorage.getItem("authorities");
+
+    if (username) {
+      setLocalUser({
+        name: username,
+        authorities,
+      });
+    }
+  }, []);
+  useEffect(() => {
+    fetchContratos();
+  }, []);
+
+  const fetchContratos = async () => {
+    try {
+      const response = await ContratoApi.getContratos();
+      setContratos(response.data);
+    } catch (e) {
+      console.error('error al traer contratos: ', e);
+    }
+  };
+
+    if(contratos.data){
+      contratos.data.forEach((contrato) => {
+      
+      })
+    }
+
+
+  const initialValues = {
+    pronombre:"",
+    nombre: '',
+    apellido: '',
+    telefono: '',
+    email: '',
+    dni: '',
+    cuit:'',
+    nacionalidad:'',
+    direccionResidencial: '',
+    estadoCivil:'',
+    nombreEmpresa:'',
+    legajo:'',
+    cuitEmpresa:'',
+    sectorActual:'',
+    cargoActual:'',
+    tipoGarantia:'',
+    partidaInmobiliaria:'',
+    direccion:'',
+    infoCatastral:'',
+    estadoOcupacion:'',
+    tipoPropiedad:'',
+    informeDominio:'',
+    informeInhibicion:'',
+    nombreUsuario:localUser.name
+  };
+  
+  
+  const pronombres = [
+    { value: 'El Sr.', label: 'El Sr.' },
+    { value: 'La Sra.', label: 'La Sra.' },
+  
+  ];
+  const estadosCiviles = [
+    { value: 'Soltero', label: 'Soltero' },
+    { value: 'Casado', label: 'Casado' },
+    { value: 'Viudo', label: 'Viudo' },
+    { value: 'Divorciado', label: 'Divorciado' },
+    ];
+
+  const tipoGarantias = [
+    { value: 1 , label: 'Garantia Propietaria' },
+    { value: 2, label: 'Recibo de sueldo'}
+  ]
+  const onSubmit = async (values, { setSubmitting }) => {
+    // Sanitize formatted fields (remove dots/hyphens) and convert to integers where applicable
+    const onlyDigits = (v) => (v == null ? '' : String(v).replace(/\D/g, ''));
+    const processedValues = {
+      ...values,
+      dni: values.dni ? parseInt(onlyDigits(values.dni), 10) : values.dni,
+      telefono: values.telefono ? parseInt(onlyDigits(values.telefono), 10) : values.telefono,
+      cuit: values.cuit ? parseInt(onlyDigits(values.cuit), 10) : values.cuit,
+      legajo: values.legajo ? parseInt(onlyDigits(values.legajo), 10) : values.legajo,
+      cuitEmpresa: values.cuitEmpresa ? parseInt(onlyDigits(values.cuitEmpresa), 10) : values.cuitEmpresa,
+      partidaInmobiliaria: values.partidaInmobiliaria ? parseInt(onlyDigits(values.partidaInmobiliaria), 10) : values.partidaInmobiliaria,
+    };
+
+    try {
+      await GarantesApi.crearGarante(processedValues);
+      showSuccess('Garante creado exitosamente');
+      
+      // Close modal if onSuccess callback is provided
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      showError('Error al crear el   garante');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  const cambioGarantia = () => {
+    const nuevoTipo = !tipoGarantia;
+    setTipoGarantia(nuevoTipo);
+    setFieldValue("tipoGarantia", nuevoTipo ? "Recibo de Sueldo" : "Garantia Propietaria");
+  };
+
+  if (!isUserLoaded) return null;
+  return (
+    <Box sx={{ 
+      bgcolor: 'background.default',
+      color: 'text.primary',
+      minHeight: '100vh',
+      width:"100%"
+    }}>
+      <Typography 
+        variant="h4" 
+        component="h1" 
+        sx={{ 
+          mb: 3, 
+          textAlign: 'center',
+          color: 'text.primary',
+          fontWeight: 600
+        }}
+      >
+        Nuevo Garante
+      </Typography>
+
+      <Formik
+        initialValues={initialValues}
+        validationSchema={SchemaValidation.garanteValidation}
+        onSubmit={onSubmit}
+        enableReinitialize >
+    
+
+        {({ values, handleChange, handleBlur, setFieldValue, isSubmitting }) => (
+          <Form sx={{width:"100%" }}>
+
+            <Grid2 sx={{width:"100%", display:"flex",flexDirection:"column", justifyContent:"center", alignItems:"center" }}>
+
+            <Grid2 sx={{ display: 'flex', width: '100%', padding:".5rem",justifyContent:"space-evenly",flexDirection:"column", justifyContent:"center", alignItems:"center"}}>
+              
+              <Grid2 sx={{display:"flex" , gap:"3rem", width:"100%",flexDirection:"column", justifyContent:"center", alignItems:"center"}}>
+                <Grid2 sx={{ width: '100%',flexDirection:"column", justifyContent:"center", alignItems:"center"}}>
+                <Typography>
+                  Datos personales
+                </Typography>
+                
+                  <Box sx={{ marginTop: '.5rem', width:"100%"}}>
+                
+                <Field name="pronombre">
+                  {({ field, form }) => (
+                    <FormControl fullWidth variant="outlined">
+                      <InputLabel id="pronombre-label">Pronombre</InputLabel>
+                      <Select
+                        labelId="pronombre-label"
+                        label="Pronombre"
+                        {...field}
+                        value={form.values.pronombre}
+                        onChange={(e) => {
+                          form.setFieldValue("pronombre", e.target.value);
+                        }}
+                      >
+                        {pronombres.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    )}
+                  </Field>
+                </Box>
+                <Box sx={{ marginTop: '.5rem'}}>
+                  <Field
+                    name="nombre"
+                    as={TextField}
+                    label="Nombre"
+                    variant="outlined"
+                    fullWidth
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    value={values.nombre}
+                  />
+                  <ErrorMessage name="nombre" component="div" style={{ color: 'red' }} />
+                </Box>
+                <Box sx={{ marginTop: '.5rem' }}>
+                  <Field
+                    name="apellido"
+                    as={TextField}
+                    label="Apellido"
+                    variant="outlined"
+                    fullWidth
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    value={values.apellido}
+                  />
+                  <ErrorMessage name="apellido" component="div" style={{ color: 'red' }} />
+                </Box>
+                <Box sx={{ marginTop: '.5rem' }}>
+                  <Field
+                    name="telefono"
+                    as={TextField}
+                    label="Teléfono"
+                    variant="outlined"
+                    fullWidth
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    value={values.telefono}
+                  />
+                  <ErrorMessage name="telefono" component="div" style={{ color: 'red' }} />
+                </Box>
+                <Box sx={{ marginTop: '.5rem' }}>
+                  <Field
+                    name="email"
+                    as={TextField}
+                    label="Email"
+                    variant="outlined"
+                    fullWidth
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    value={values.email}
+                  />
+                  <ErrorMessage name="email" component="div" style={{ color: 'red' }} />
+                </Box>
+                <Box sx={{ marginTop: '.5rem' }}>
+                  <Field name="dni">
+                    {({ field }) => (
+                      <TextField
+                        {...field}
+                        label="DNI"
+                        variant="outlined"
+                        fullWidth
+                        value={field.value}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                          setFieldValue('dni', formatted);
+                        }}
+                        onBlur={handleBlur}
+                      />
+                    )}
+                  </Field>
+                  <ErrorMessage name="dni" component="div" style={{ color: 'red' }} />
+                </Box>
+                <Box sx={{ marginTop: '.5rem' }}>
+                  <Field name="cuit">
+                    {({ field }) => (
+                      <TextField
+                        {...field}
+                        label="CUIT"
+                        variant="outlined"
+                        fullWidth
+                        value={field.value}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
+                          const a = digits.slice(0, 2);
+                          const b = digits.slice(2, 10);
+                          const c = digits.slice(10, 11);
+                          const formatted = [a, b, c]
+                            .map((seg, idx) => (idx === 0 ? seg : seg ? '-' + seg : ''))
+                            .join('')
+                            .replace(/^-/, '');
+                          setFieldValue('cuit', formatted);
+                        }}
+                        onBlur={handleBlur}
+                      />
+                    )}
+                  </Field>
+                  <ErrorMessage name="dni" component="div" style={{ color: 'red' }} />
+                </Box>
+                <Box sx={{ marginTop: '.5rem' }}>
+                  <Field
+                    name="direccionResidencial"
+                    as={TextField}
+                    label="Dirección Residencial"
+                    variant="outlined"
+                    fullWidth
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    value={values.direccionResidencial}
+                  />
+                  <ErrorMessage name="direccionResidencial" component="div" style={{ color: 'red' }} />
+                </Box>
+                <Box sx={{ marginTop: '.5rem'}}>
+                
+                <Field name="estadoCivil">
+                  {({ field, form }) => (
+                    <FormControl fullWidth variant="outlined">
+                      <InputLabel id="estadoCivil-label">Estado Civil</InputLabel>
+                      <Select
+                        labelId="estadoCivil-label"
+                        label="Estado Civil"
+                        {...field}
+                        value={form.values.estadoCivil}
+                        onChange={(e) => {
+                          form.setFieldValue("estadoCivil", e.target.value);
+                        }}
+                      >
+                        {estadosCiviles.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                </Field>
+              </Box>
+        
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="nacionalidad"
+                  as={TextField}
+                  label="Nacionalidad"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.nacionalidad}
+                />
+                <ErrorMessage name="nacionalidad" component="div" style={{ color: 'red' }} />
+              </Box>
+              
+              </Grid2> 
+         
+            </Grid2>
+
+            {/* Sección para subir imágenes */}
+            <Divider orientation="vertical" flexItem variant="middle"/>
+           <Grid2 >
+
+            <Grid2 sx={{display:"flex", alignItems:"center", marginBottom:"1rem", justifyContent:"space-evenly", gap:"1rem",
+              width:"100%"
+            }}>
+           {tipoGarantia ? (
+             <Box sx={{
+              display:"flex",
+              alignItems:"center", 
+              marginBottom:"1rem", 
+              justifyContent:"center",
+              gap:"1rem",
+              width:"100%",
+               padding:".5rem"
+            }}>
+      <Typography fontSize={".9rem"} textAlign={"center"}>Recibo de Sueldo</Typography>
+      </Box>
+           ):(
+            <Box sx={{
+              display:"flex",
+              alignItems:"center", 
+              marginBottom:"1rem", 
+              justifyContent:"center",
+              gap:"1rem",
+              width:"100%",
+               padding:".5rem",
+               backgroundColor:"rgba(33, 28, 128, 0.87)",
+               borderRadius:"10px"
+            }}>
+      <Typography fontSize={".9rem"} textAlign={"center"} color="white">Recibo de Sueldo</Typography>
+      </Box>
+           )}
+          
+            
+            <Switch onClick={cambioGarantia}/>
+           {tipoGarantia ? (
+             <Box sx={{
+              display:"flex",
+              alignItems:"center", 
+              marginBottom:"1rem", 
+              justifyContent:"center",
+              gap:"1rem",
+              width:"100%",
+              padding:".5rem",
+               backgroundColor:"rgba(33, 28, 128, 0.87)",
+               borderRadius:"10px"
+            }}>
+      <Typography fontSize={".9rem"} textAlign={"center"} color="white">Garantia Propietaria</Typography>
+      </Box>
+           ):(
+            <Box sx={{
+              display:"flex",
+              alignItems:"center", 
+              marginBottom:"1rem", 
+              justifyContent:"center",
+              gap:"1rem",
+              width:"100%",
+              padding:".5rem"
+            }}>
+      <Typography fontSize={".9rem"} textAlign={"center"}>Garantia Propietaria</Typography>
+      </Box>
+           )}
+           
+            
+            </Grid2>
+           
+            
+            {tipoGarantia ? 
+            (<Grid2 sx={{padding:".5rem", display:"flex", flexDirection:"column", justifyContent:"start", }}>
+              
+
+              <Typography fontSize={"1.2rem"}>
+               Garantia Propietaria
+              </Typography>
+            
+
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="partidaInmobiliaria"
+                  as={TextField}
+                  label="Partida Inmobiliaria"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.partidaInmobiliaria}
+                />
+
+                <ErrorMessage name="partidaInmobiliaria" component="div" style={{ color: 'red' }} />
+              </Box>
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="direccion"
+                  as={TextField}
+                  label="Direccion completa"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.direccion}
+                />
+
+                <ErrorMessage name="direccion" component="div" style={{ color: 'red' }} />
+              </Box>
+
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="infoCatastral"
+                  as={TextField}
+                  label="Informacion Catastral"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.infoCatastral}
+                />
+
+                <ErrorMessage name="infoCatastral" component="div" style={{ color: 'red' }} />
+              </Box>
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="estadoOcupacion"
+                  as={TextField}
+                  label="Estado de Ocupacion"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.estadoOcupacion}
+                />
+
+                <ErrorMessage name="estadoOcupacion" component="div" style={{ color: 'red' }} />
+              </Box>
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="tipoPropiedad"
+                  as={TextField}
+                  label="Tipo de Propiedad"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.tipoPropiedad}
+                />
+
+                <ErrorMessage name="tipoPropiedad" component="div" style={{ color: 'red' }} />
+              </Box>
+              
+          
+
+             
+
+            
+            </Grid2>)
+            :
+            (<Grid2 sx={{ padding:".5rem", display:"flex", flexDirection:"column", justifyContent:"start"}}>
+              
+              <Typography fontSize={"1.2rem"}>
+                Datos Laborales
+              </Typography>
+            
+
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="nombreEmpresa"
+                  as={TextField}
+                  label="Empresa"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.nombreEmpresa}
+                />
+
+                <ErrorMessage name="empresa" component="div" style={{ color: 'red' }} />
+              </Box>
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="legajo"
+                  as={TextField}
+                  label="Legajo"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.legajo}
+                />
+
+                <ErrorMessage name="legajo" component="div" style={{ color: 'red' }} />
+              </Box>
+
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="cuitEmpresa"
+                  as={TextField}
+                  label="CUIT .Emp"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.cuitEmpresa}
+                />
+
+                <ErrorMessage name="sectorActual" component="div" style={{ color: 'red' }} />
+              </Box>
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="sectorActual"
+                  as={TextField}
+                  label="Sector"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.sectorActual}
+                />
+
+                <ErrorMessage name="sectorActual" component="div" style={{ color: 'red' }} />
+              </Box>
+              <Box sx={{ marginTop: '.5rem' }}>
+                <Field
+                  name="cargoActual"
+                  as={TextField}
+                  label="Cargo"
+                  variant="outlined"
+                  fullWidth
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.cargoActual}
+                />
+
+                <ErrorMessage name="sectorActual" component="div" style={{ color: 'red' }} />
+              </Box>
+     
+
+           
+             
+
+            
+            </Grid2>)}
+
+            
+            </Grid2>
+
+            
+              
+          </Grid2>
+
+  
+          <Box sx={{display:"flex", width:"100%", justifyContent:"flex-end"}}>
+        <Button  
+          type="submit" 
+          variant="contained" 
+          color="primary"
+          disabled={isSubmitting}
+        >
+            {isSubmitting ? "Creando garante..." : "Cargar garante"}
+        </Button>
+        </Box>
+          </Grid2>
+          
+        </Form>
+      )}
+    </Formik>
+    </Box>
+  );
+};
+
+export default GaranteForm;
